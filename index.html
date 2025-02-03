@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الطلبات</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>نظام إدارة الطلبات</h1>
+
+        <!-- 📝 نموذج إرسال طلب جديد -->
+        <form id="orderForm">
+            <input type="text" id="customerName" placeholder="اسم العميل" required>
+            <textarea id="orderDetails" placeholder="تفاصيل الطلب" required></textarea>
+            <button type="submit">إرسال الطلب</button>
+        </form>
+
+        <!-- 📋 قائمة الطلبات -->
+        <h2>الطلبات الحالية</h2>
+        <ul id="orderList"></ul>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,40 +1,42 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
+
+const PORT = process.env.PORT || 27017;
 app.use(express.json());
 app.use(cors());
 
-// الاتصال بقاعدة بيانات MongoDB (استبدل الرابط برابط MongoDB Atlas الخاص بك)
-mongoose.connect('mongodb+srv://sido:G5QvR51EGXXCdaaJ@cluster0.o0rq7.mongodb.net/', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log("✅ تم الاتصال بقاعدة البيانات"))
-  .catch(err => console.error("❌ فشل الاتصال بقاعدة البيانات:", err));
+let orders = []; // قائمة الطلبات المخزنة مؤقتًا
 
-// تعريف نموذج الطلبات في قاعدة البيانات
-const orderSchema = new mongoose.Schema({
-    customerName: String,
-    orderDetails: String,
-    timestamp: { type: Date, default: Date.now }
-});
-const Order = mongoose.model("Order", orderSchema);
+// استقبال طلب جديد
+app.post("/order", (req, res) => {
+    const { customer, details } = req.body;
+    if (!customer || !details) {
+        return res.status(400).json({ message: "يرجى إدخال جميع البيانات" });
+    }
+    const order = { id: orders.length + 1, customer, details, status: "قيد المعالجة" };
+    orders.push(order);
 
-// إضافة طلب جديد
-app.post('/orders', async (req, res) => {
-    const { customerName, orderDetails } = req.body;
-    const newOrder = new Order({ customerName, orderDetails });
-    await newOrder.save();
-    res.json({ message: "✅ تم حفظ الطلب", order: newOrder });
+    // إرسال إشعار فوري لكل الأجهزة المتصلة
+    io.emit("newOrder", order);
+
+    console.log("📩 طلب جديد:", order);
+    res.status(201).json({ message: "تم استلام الطلب بنجاح", order });
 });
 
-// جلب جميع الطلبات
-app.get('/orders', async (req, res) => {
-    const orders = await Order.find().sort({ timestamp: -1 });
+// عرض جميع الطلبات
+app.get("/orders", (req, res) => {
     res.json(orders);
 });
 
 // تشغيل السيرفر
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`));
+server.listen(PORT, () => {
+    console.log(`🚀 السيرفر يعمل على http://localhost:${PORT}`);
+});
