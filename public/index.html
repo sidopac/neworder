@@ -1,52 +1,112 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الطلبات</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>نظام متابعة الطلبات</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        input, select, button { padding: 10px; margin: 10px 0; }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h2 class="text-center">نموذج تقديم الطلب</h2>
-        <form id="orderForm">
-            <div class="mb-3">
-                <label class="form-label">اسم العميل</label>
-                <input type="text" id="customerName" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">تفاصيل الطلب</label>
-                <textarea id="orderDetails" class="form-control" rows="3" required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">إرسال الطلب</button>
-        </form>
-        <hr>
-        <h3 class="text-center">الطلبات المستلمة</h3>
-        <ul id="ordersList" class="list-group mt-3"></ul>
-    </div>
+<body>
+    <h1>نظام متابعة الطلبات</h1>
+    <a href="/logout">تسجيل الخروج</a>
+    <h3>إضافة طلب جديد:</h3>
+    <form id="addOrderForm">
+        <input type="text" id="customerName" placeholder="اسم العميل" required>
+        <input type="text" id="product" placeholder="المنتج" required>
+        <select id="status" required>
+            <option value="قيد التنفيذ">قيد التنفيذ</option>
+            <option value="قيد الشحن">قيد الشحن</option>
+            <option value="تم التسليم">تم التسليم</option>
+        </select>
+        <button type="submit">إضافة</button>
+    </form>
+
+    <input type="text" id="searchBox" placeholder="ابحث عن الطلبات">
+    <button onclick="searchOrders()">بحث</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>رقم الطلب</th>
+                <th>اسم العميل</th>
+                <th>المنتج</th>
+                <th>الحالة</th>
+                <th>تعديل الحالة</th>
+            </tr>
+        </thead>
+        <tbody id="ordersTable"></tbody>
+    </table>
 
     <script>
-        const socket = new WebSocket("wss://your-vercel-app.vercel.app");
+        // جلب الطلبات
+        function fetchOrders(query = '') {
+            fetch(`/orders?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('ordersTable');
+                    table.innerHTML = '';
+                    data.forEach(order => {
+                        const row = `
+                            <tr>
+                                <td>${order.id}</td>
+                                <td>${order.customer_name}</td>
+                                <td>${order.product}</td>
+                                <td>${order.status}</td>
+                                <td>
+                                    <select onchange="updateOrder(${order.id}, this.value)">
+                                        <option value="قيد التنفيذ" ${order.status === 'قيد التنفيذ' ? 'selected' : ''}>قيد التنفيذ</option>
+                                        <option value="قيد الشحن" ${order.status === 'قيد الشحن' ? 'selected' : ''}>قيد الشحن</option>
+                                        <option value="تم التسليم" ${order.status === 'تم التسليم' ? 'selected' : ''}>تم التسليم</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        `;
+                        table.innerHTML += row;
+                    });
+                });
+        }
 
-        document.getElementById("orderForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            const customerName = document.getElementById("customerName").value;
-            const orderDetails = document.getElementById("orderDetails").value;
-            
-            const order = { customerName, orderDetails };
-            socket.send(JSON.stringify(order));
+        // إضافة طلب جديد
+        document.getElementById('addOrderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const customerName = document.getElementById('customerName').value;
+            const product = document.getElementById('product').value;
+            const status = document.getElementById('status').value;
 
-            document.getElementById("customerName").value = "";
-            document.getElementById("orderDetails").value = "";
+            fetch('/add_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_name: customerName, product: product, status: status })
+            }).then(response => response.json())
+              .then(() => {
+                  fetchOrders();
+                  this.reset();
+              });
         });
 
-        socket.onmessage = function(event) {
-            const order = JSON.parse(event.data);
-            const listItem = document.createElement("li");
-            listItem.className = "list-group-item";
-            listItem.textContent = `${order.customerName}: ${order.orderDetails}`;
-            document.getElementById("ordersList").appendChild(listItem);
-        };
+        // تحديث حالة الطلب
+        function updateOrder(orderId, status) {
+            fetch(`/update_order/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            }).then(() => fetchOrders());
+        }
+
+        // البحث
+        function searchOrders() {
+            const query = document.getElementById('searchBox').value;
+            fetchOrders(query);
+        }
+
+        // تحميل الطلبات عند فتح الصفحة
+        window.onload = () => fetchOrders();
     </script>
 </body>
 </html>
