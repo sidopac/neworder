@@ -76,7 +76,7 @@
         }
 
         async function fetchOrders() {
-            const response = await fetch("http://localhost:27017/orders");
+            const response = await fetch("mongodb+srv://sbavevo:q4bifLosnOceGplg@cluster0.hn6yv.mongodb.net/");
             const orders = await response.json();
             const ordersList = document.getElementById("ordersList");
             ordersList.innerHTML = "";
