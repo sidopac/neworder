@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "chrome",
+            "name": "https://kxmn0xq5-3000.asse.devtunnels.ms/",
+            "request": "launch",
+            "url": "https://kxmn0xq5-3000.asse.devtunnels.ms/"
+        }
+    ]
+}
