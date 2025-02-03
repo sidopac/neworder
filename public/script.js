@@ -1,4 +1,13 @@
-const socket = io();
+// تعريف مكتبة Socket.IO
+const { Server } = require('socket.io');
+const { server } = require('../server');
+
+// إنشاء Socket.IO server
+const io = new Server(server, { cors: { origin: "*" } });
+exports.io = io;
+
+// **📌 الاتصال بـ Socket.IO من جانب العميل**
+const socket = io(); // هذا يجب أن يكون في ملف العميل (Frontend)
 
 // **📌 إرسال طلب جديد إلى السيرفر**
 document.getElementById("orderForm").addEventListener("submit", async (event) => {
